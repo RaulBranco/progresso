@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Progresso — acompanhamento físico</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F2F1EC;
+    --surface:#FFFFFF;
+    --ink:#1C2321;
+    --ink-soft:#5B6663;
+    --ink-faint:#8A928F;
+    --border:#DEDAD0;
+    --accent:#2B3A67;
+    --accent-soft:#E7E9F2;
+    --green:#2F8F49;
+    --green-soft:#E3F3E6;
+    --yellow:#B9791E;
+    --yellow-soft:#FBEFDB;
+    --red:#BF4335;
+    --red-soft:#FAE4E1;
+    --radius:14px;
+    --shadow:0 1px 2px rgba(28,35,33,.06);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+  }
+  .app{
+    width:100%;
+    max-width:480px;
+    min-height:100vh;
+    background:var(--bg);
+    display:flex;
+    flex-direction:column;
+    position:relative;
+  }
+  h1,h2,h3,.num{font-family:'Space Grotesk',sans-serif;}
+  .tabular{font-variant-numeric:tabular-nums;}
+
+  /* Header */
+  header.top{
+    padding:22px 20px 18px;
+    border-bottom:1px solid var(--border);
+  }
+  header.top .brand{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+  }
+  header.top .brand h1{
+    font-size:22px;
+    font-weight:700;
+    margin:0;
+    letter-spacing:-.01em;
+  }
+  header.top .greet{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin-top:2px;
+  }
+  .snapshot{
+    margin-top:16px;
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .snapshot .label{
+    font-size:12px;
+    color:var(--ink-faint);
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    margin-bottom:2px;
+  }
+  .snapshot .value{
+    font-size:34px;
+    font-weight:700;
+    line-height:1;
+  }
+  .snapshot .value span{font-size:16px; font-weight:500; color:var(--ink-soft);}
+  .chip{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    padding:5px 10px;
+    border-radius:999px;
+    font-size:13px;
+    font-weight:600;
+    white-space:nowrap;
+  }
+  .chip.green{background:var(--green-soft); color:var(--green);}
+  .chip.yellow{background:var(--yellow-soft); color:var(--yellow);}
+  .chip.red{background:var(--red-soft); color:var(--red);}
+  .chip.neutral{background:var(--accent-soft); color:var(--accent);}
+
+  /* Views */
+  main{
+    flex:1;
+    padding:18px 20px 100px;
+  }
+  .view{display:none;}
+  .view.active{display:block;}
+  section.block{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:18px;
+    margin-bottom:14px;
+    box-shadow:var(--shadow);
+  }
+  section.block h2{
+    font-size:15px;
+    font-weight:600;
+    margin:0 0 14px;
+  }
+  section.block h2 .sub{
+    display:block;
+    font-family:'Inter',sans-serif;
+    font-weight:400;
+    font-size:12px;
+    color:var(--ink-faint);
+    margin-top:2px;
+  }
+
+  /* Form */
+  .field{margin-bottom:14px;}
+  .field label{
+    display:block;
+    font-size:12.5px;
+    font-weight:500;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+  .field input, .field textarea{
+    width:100%;
+    border:1px solid var(--border);
+    background:#FDFCFA;
+    border-radius:10px;
+    padding:11px 12px;
+    font-size:15px;
+    font-family:'Inter',sans-serif;
+    color:var(--ink);
+  }
+  .field input:focus, .field textarea:focus{
+    outline:none;
+    border-color:var(--accent);
+  }
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .field textarea{resize:vertical; min-height:56px;}
+  .field .unit{font-weight:400; color:var(--ink-faint); font-size:12px;}
+
+  button.primary{
+    width:100%;
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    border-radius:10px;
+    padding:13px;
+    font-size:15px;
+    font-weight:600;
+    font-family:'Inter',sans-serif;
+    cursor:pointer;
+  }
+  button.primary:active{opacity:.85;}
+  button.ghost{
+    width:100%;
+    background:transparent;
+    color:var(--ink-soft);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:11px;
+    font-size:14px;
+    font-weight:500;
+    font-family:'Inter',sans-serif;
+    cursor:pointer;
+    margin-top:8px;
+  }
+
+  /* Histórico */
+  .record{
+    border-bottom:1px solid var(--border);
+    padding:13px 0;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
+  }
+  .record:last-child{border-bottom:none;}
+  .record .date{
+    font-size:12px;
+    color:var(--ink-faint);
+    margin-bottom:3px;
+  }
+  .record .main{font-size:15px; font-weight:600;}
+  .record .details{font-size:12.5px; color:var(--ink-soft); margin-top:3px; line-height:1.5;}
+  .record .actions{display:flex; gap:6px; flex-shrink:0;}
+  .icon-btn{
+    border:1px solid var(--border);
+    background:var(--surface);
+    border-radius:8px;
+    width:30px;
+    height:30px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    font-size:14px;
+    color:var(--ink-soft);
+  }
+  .empty{
+    text-align:center;
+    padding:30px 10px;
+    color:var(--ink-faint);
+    font-size:13.5px;
+  }
+
+  /* Gráficos */
+  .metric-select{
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    padding-bottom:4px;
+    margin-bottom:16px;
+    scrollbar-width:none;
+  }
+  .metric-select::-webkit-scrollbar{display:none;}
+  .metric-pill{
+    flex-shrink:0;
+    padding:8px 14px;
+    border-radius:999px;
+    border:1px solid var(--border);
+    background:var(--surface);
+    font-size:13px;
+    font-weight:500;
+    color:var(--ink-soft);
+    cursor:pointer;
+  }
+  .metric-pill.active{
+    background:var(--accent);
+    border-color:var(--accent);
+    color:#fff;
+  }
+  .legend{
+    display:flex;
+    gap:14px;
+    justify-content:center;
+    margin-top:10px;
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+  .legend span{display:inline-flex; align-items:center; gap:5px;}
+  .dot{width:8px; height:8px; border-radius:50%; display:inline-block;}
+
+  /* Resumo */
+  .summary-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:12px 0;
+    border-bottom:1px solid var(--border);
+  }
+  .summary-row:last-child{border-bottom:none;}
+  .summary-row .name{font-size:14px; font-weight:500;}
+  .summary-row .from-to{font-size:11.5px; color:var(--ink-faint); margin-top:2px;}
+  .summary-row .right{text-align:right;}
+
+  /* Tab bar */
+  nav.tabbar{
+    position:fixed;
+    bottom:0;
+    left:50%;
+    transform:translateX(-50%);
+    width:100%;
+    max-width:480px;
+    background:var(--surface);
+    border-top:1px solid var(--border);
+    display:flex;
+    padding:8px 6px calc(8px + env(safe-area-inset-bottom));
+  }
+  nav.tabbar button{
+    flex:1;
+    background:none;
+    border:none;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:3px;
+    padding:6px 2px;
+    font-family:'Inter',sans-serif;
+    font-size:11px;
+    color:var(--ink-faint);
+    cursor:pointer;
+  }
+  nav.tabbar button .ic{font-size:18px;}
+  nav.tabbar button.active{color:var(--accent); font-weight:600;}
+
+  @media (max-width:360px){
+    .snapshot .value{font-size:28px;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <div class="brand">
+      <h1>Progresso</h1>
+    </div>
+    <div class="greet" id="greeting">Seu acompanhamento físico</div>
+    <div class="snapshot">
+      <div>
+        <div class="label">Peso atual</div>
+        <div class="value tabular" id="currentWeight">—</div>
+      </div>
+      <div id="weightChip"></div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- REGISTRAR -->
+    <div class="view active" id="view-registrar">
+      <section class="block">
+        <h2>Novo registro
+          <span class="sub">Preencha o peso e as medidas que quiser acompanhar hoje</span>
+        </h2>
+        <div class="field">
+          <label for="f-date">Data</label>
+          <input type="date" id="f-date">
+        </div>
+        <div class="field">
+          <label for="f-weight">Peso <span class="unit">(kg)</span></label>
+          <input type="number" step="0.1" inputmode="decimal" id="f-weight" placeholder="ex: 82,4">
+        </div>
+        <div class="grid2">
+          <div class="field">
+            <label for="f-waist">Cintura <span class="unit">(cm)</span></label>
+            <input type="number" step="0.1" inputmode="decimal" id="f-waist">
+          </div>
+          <div class="field">
+            <label for="f-hip">Quadril <span class="unit">(cm)</span></label>
+            <input type="number" step="0.1" inputmode="decimal" id="f-hip">
+          </div>
+          <div class="field">
+            <label for="f-chest">Peito <span class="unit">(cm)</span></label>
+            <input type="number" step="0.1" inputmode="decimal" id="f-chest">
+          </div>
+          <div class="field">
+            <label for="f-arm">Braço <span class="unit">(cm)</span></label>
+            <input type="number" step="0.1" inputmode="decimal" id="f-arm">
+          </div>
+          <div class="field">
+            <label for="f-thigh">Coxa <span class="unit">(cm)</span></label>
+            <input type="number" step="0.1" inputmode="decimal" id="f-thigh">
+          </div>
+          <div class="field">
+            <label for="f-fat">Gordura <span class="unit">(%)</span></label>
+            <input type="number" step="0.1" inputmode="decimal" id="f-fat">
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-notes">Observações</label>
+          <textarea id="f-notes" placeholder="como você se sentiu, treinos da semana, etc."></textarea>
+        </div>
+        <button class="primary" id="saveBtn">Salvar registro</button>
+      </section>
+    </div>
+
+    <!-- HISTÓRICO -->
+    <div class="view" id="view-historico">
+      <section class="block">
+        <h2>Histórico
+          <span class="sub" id="historicoCount">Nenhum registro ainda</span>
+        </h2>
+        <div id="historicoList"></div>
+      </section>
+    </div>
+
+    <!-- GRÁFICOS -->
+    <div class="view" id="view-graficos">
+      <section class="block">
+        <h2>Evolução
+          <span class="sub">Verde = melhora, amarelo = estável, vermelho = piora</span>
+        </h2>
+        <div class="metric-select" id="metricSelect"></div>
+        <div id="chartWrap"></div>
+        <div class="legend">
+          <span><span class="dot" style="background:var(--green)"></span>Progresso</span>
+          <span><span class="dot" style="background:var(--yellow)"></span>Estável</span>
+          <span><span class="dot" style="background:var(--red)"></span>Aumento</span>
+        </div>
+      </section>
+    </div>
+
+    <!-- RESUMO -->
+    <div class="view" id="view-resumo">
+      <section class="block">
+        <h2>Resumo geral
+          <span class="sub" id="resumoRange">Comparando primeiro e último registro</span>
+        </h2>
+        <div id="resumoList"></div>
+      </section>
+    </div>
+
+  </main>
+
+  <nav class="tabbar">
+    <button data-view="registrar" class="active"><span class="ic">＋</span>Registrar</button>
+    <button data-view="historico"><span class="ic">☰</span>Histórico</button>
+    <button data-view="graficos"><span class="ic">📈</span>Gráficos</button>
+    <button data-view="resumo"><span class="ic">◎</span>Resumo</button>
+  </nav>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STORAGE_KEY = "progresso-fisico-registros-v1";
+  var METRICS = [
+    {key:"weight", label:"Peso", unit:"kg", lowerIsBetter:true},
+    {key:"waist", label:"Cintura", unit:"cm", lowerIsBetter:true},
+    {key:"hip", label:"Quadril", unit:"cm", lowerIsBetter:true},
+    {key:"chest", label:"Peito", unit:"cm", lowerIsBetter:null},
+    {key:"arm", label:"Braço", unit:"cm", lowerIsBetter:null},
+    {key:"thigh", label:"Coxa", unit:"cm", lowerIsBetter:null},
+    {key:"fat", label:"Gordura", unit:"%", lowerIsBetter:true}
+  ];
+  var STABLE_TOLERANCE = 0.15;
+
+  function loadRecords(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){ return []; }
+  }
+  function saveRecords(list){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+      return true;
+    }catch(e){ return false; }
+  }
+  function sortByDate(list){
+    return list.slice().sort(function(a,b){ return a.date.localeCompare(b.date); });
+  }
+  function fmtDate(iso){
+    var parts = iso.split("-");
+    return parts[2] + "/" + parts[1] + "/" + parts[0];
+  }
+  function fmtNum(v, unit){
+    if(v === null || v === undefined || v === "") return "—";
+    var n = parseFloat(v);
+    if(isNaN(n)) return "—";
+    var s = n.toLocaleString("pt-BR", {minimumFractionDigits:1, maximumFractionDigits:1});
+    return s + (unit ? " " + unit : "");
+  }
+
+  var records = loadRecords();
+
+  // ---------- Navegação por abas ----------
+  var tabs = document.querySelectorAll("nav.tabbar button");
+  var views = { registrar:"view-registrar", historico:"view-historico", graficos:"view-graficos", resumo:"view-resumo" };
+  tabs.forEach(function(btn){
+    btn.addEventListener("click", function(){
+      tabs.forEach(function(b){ b.classList.remove("active"); });
+      btn.classList.add("active");
+      Object.keys(views).forEach(function(k){
+        document.getElementById(views[k]).classList.toggle("active", k === btn.dataset.view);
+      });
+      if(btn.dataset.view === "historico") renderHistorico();
+      if(btn.dataset.view === "graficos") renderGraficos();
+      if(btn.dataset.view === "resumo") renderResumo();
+    });
+  });
+
+  // ---------- Saudação e data padrão ----------
+  var greetEl = document.getElementById("greeting");
+  var hour = new Date().getHours();
+  var saud = hour < 12 ? "Bom dia" : (hour < 18 ? "Boa tarde" : "Boa noite");
+  greetEl.textContent = saud + ". Vamos registrar seu progresso?";
+  document.getElementById("f-date").valueAsDate = new Date();
+
+  // ---------- Snapshot no topo ----------
+  function renderSnapshot(){
+    var sorted = sortByDate(records);
+    var last = sorted[sorted.length-1];
+    var prev = sorted[sorted.length-2];
+    var weightEl = document.getElementById("currentWeight");
+    var chipEl = document.getElementById("weightChip");
+    if(!last || last.weight === "" || last.weight === undefined){
+      weightEl.innerHTML = "—";
+      chipEl.innerHTML = "";
+      return;
+    }
+    weightEl.innerHTML = fmtNum(last.weight,"") + ' <span>kg</span>';
+    if(prev && prev.weight !== "" && prev.weight !== undefined){
+      var diff = parseFloat(last.weight) - parseFloat(prev.weight);
+      var status = statusFor(diff, true);
+      var arrow = diff > STABLE_TOLERANCE ? "▲" : (diff < -STABLE_TOLERANCE ? "▼" : "＝");
+      chipEl.innerHTML = '<span class="chip ' + status + '">' + arrow + ' ' + (diff>0?"+":"") + diff.toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1}) + ' kg</span>';
+    } else {
+      chipEl.innerHTML = '<span class="chip neutral">primeiro registro</span>';
+    }
+  }
+
+  function statusFor(diff, lowerIsBetter){
+    if(Math.abs(diff) <= STABLE_TOLERANCE) return "yellow";
+    if(lowerIsBetter === null || lowerIsBetter === undefined) return "yellow";
+    var improved = lowerIsBetter ? diff < 0 : diff > 0;
+    return improved ? "green" : "red";
+  }
+
+  // ---------- Registrar ----------
+  document.getElementById("saveBtn").addEventListener("click", function(){
+    var date = document.getElementById("f-date").value;
+    if(!date){ alert("Escolha uma data para o registro."); return; }
+    var rec = {
+      id: Date.now().toString(36),
+      date: date,
+      weight: document.getElementById("f-weight").value,
+      waist: document.getElementById("f-waist").value,
+      hip: document.getElementById("f-hip").value,
+      chest: document.getElementById("f-chest").value,
+      arm: document.getElementById("f-arm").value,
+      thigh: document.getElementById("f-thigh").value,
+      fat: document.getElementById("f-fat").value,
+      notes: document.getElementById("f-notes").value
+    };
+    var hasAny = ["weight","waist","hip","chest","arm","thigh","fat"].some(function(k){ return rec[k] !== ""; });
+    if(!hasAny){ alert("Preencha ao menos o peso ou uma medida."); return; }
+
+    records.push(rec);
+    var ok = saveRecords(records);
+    if(!ok){ alert("Não foi possível salvar no momento. O registro não será mantido ao fechar a página."); }
+
+    ["f-weight","f-waist","f-hip","f-chest","f-arm","f-thigh","f-fat","f-notes"].forEach(function(id){
+      document.getElementById(id).value = "";
+    });
+    document.getElementById("f-date").valueAsDate = new Date();
+
+    renderSnapshot();
+    var savedMsg = document.createElement("div");
+    savedMsg.textContent = "Registro salvo ✓";
+    savedMsg.style.cssText = "text-align:center;font-size:13px;color:var(--green);margin-top:-4px;margin-bottom:10px;";
+    document.getElementById("saveBtn").insertAdjacentElement("afterend", savedMsg);
+    setTimeout(function(){ savedMsg.remove(); }, 2200);
+  });
+
+  // ---------- Histórico ----------
+  function renderHistorico(){
+    var wrap = document.getElementById("historicoList");
+    var countEl = document.getElementById("historicoCount");
+    var sorted = sortByDate(records).reverse();
+    countEl.textContent = sorted.length ? (sorted.length + (sorted.length===1?" registro":" registros")) : "Nenhum registro ainda";
+
+    if(!sorted.length){
+      wrap.innerHTML = '<div class="empty">Você ainda não tem registros.<br>Adicione o primeiro na aba Registrar.</div>';
+      return;
+    }
+
+    wrap.innerHTML = "";
+    sorted.forEach(function(rec){
+      var details = [];
+      METRICS.forEach(function(m){
+        if(m.key !== "weight" && rec[m.key] !== "" && rec[m.key] !== undefined){
+          details.push(m.label + ": " + fmtNum(rec[m.key], m.unit));
+        }
+      });
+      var row = document.createElement("div");
+      row.className = "record";
+      row.innerHTML =
+        '<div>' +
+          '<div class="date">' + fmtDate(rec.date) + '</div>' +
+          '<div class="main">' + (rec.weight ? fmtNum(rec.weight,"kg") : "Sem peso registrado") + '</div>' +
+          (details.length ? '<div class="details">' + details.join(" · ") + '</div>' : '') +
+          (rec.notes ? '<div class="details">"' + rec.notes.replace(/</g,"&lt;") + '"</div>' : '') +
+        '</div>' +
+        '<div class="actions"><button class="icon-btn" data-del="' + rec.id + '">✕</button></div>';
+      wrap.appendChild(row);
+    });
+
+    wrap.querySelectorAll("[data-del]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        if(!confirm("Excluir este registro?")) return;
+        records = records.filter(function(r){ return r.id !== btn.dataset.del; });
+        saveRecords(records);
+        renderHistorico();
+        renderSnapshot();
+      });
+    });
+  }
+
+  // ---------- Gráficos ----------
+  var activeMetric = "weight";
+  function renderMetricSelect(){
+    var wrap = document.getElementById("metricSelect");
+    wrap.innerHTML = "";
+    METRICS.forEach(function(m){
+      var has = records.some(function(r){ return r[m.key] !== "" && r[m.key] !== undefined; });
+      if(!has) return;
+      var pill = document.createElement("button");
+      pill.className = "metric-pill" + (m.key === activeMetric ? " active" : "");
+      pill.textContent = m.label;
+      pill.addEventListener("click", function(){
+        activeMetric = m.key;
+        renderGraficos();
+      });
+      wrap.appendChild(pill);
+    });
+  }
+
+  function renderGraficos(){
+    renderMetricSelect();
+    var chartWrap = document.getElementById("chartWrap");
+    var metric = METRICS.find(function(m){ return m.key === activeMetric; });
+    var points = sortByDate(records)
+      .filter(function(r){ return r[metric.key] !== "" && r[metric.key] !== undefined; })
+      .map(function(r){ return { date:r.date, value:parseFloat(r[metric.key]) }; });
+
+    if(points.length < 2){
+      chartWrap.innerHTML = '<div class="empty">Adicione pelo menos 2 registros com ' + metric.label.toLowerCase() + ' para ver o gráfico.</div>';
+      return;
+    }
+
+    var W = 420, H = 250, padL = 40, padR = 14, padT = 34, padB = 26;
+    var values = points.map(function(p){ return p.value; });
+    var minV = Math.min.apply(null, values);
+    var maxV = Math.max.apply(null, values);
+    if(minV === maxV){ minV -= 1; maxV += 1; }
+    var spanPad = (maxV - minV) * 0.15;
+    minV -= spanPad; maxV += spanPad;
+
+    function x(i){ return padL + (i/(points.length-1)) * (W - padL - padR); }
+    function y(v){ return H - padB - ((v - minV)/(maxV - minV)) * (H - padT - padB); }
+
+    // Área preenchida sob a linha (tom neutro, só para dar volume ao gráfico)
+    var baseline = H - padB;
+    var areaPath = 'M' + x(0) + ',' + baseline;
+    points.forEach(function(p,i){ areaPath += ' L' + x(i) + ',' + y(p.value); });
+    areaPath += ' L' + x(points.length-1) + ',' + baseline + ' Z';
+    var area = '<path d="'+areaPath+'" fill="var(--accent-soft)" opacity="0.55"/>';
+
+    var segments = "";
+    for(var i=1;i<points.length;i++){
+      var diff = points[i].value - points[i-1].value;
+      var status = statusFor(diff, metric.lowerIsBetter);
+      var color = status === "green" ? "var(--green)" : (status === "red" ? "var(--red)" : "var(--yellow)");
+      segments += '<line x1="'+x(i-1)+'" y1="'+y(points[i-1].value)+'" x2="'+x(i)+'" y2="'+y(points[i].value)+'" stroke="'+color+'" stroke-width="2.5" stroke-linecap="round"/>';
+    }
+    var dots = "";
+    var valueLabels = "";
+    points.forEach(function(p,i){
+      var py = y(p.value);
+      dots += '<circle cx="'+x(i)+'" cy="'+py+'" r="3.5" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"/>';
+      // alterna o rótulo acima/abaixo do ponto quando há muitos registros, para reduzir sobreposição
+      var above = points.length <= 6 ? true : (i % 2 === 0);
+      var labelY = above ? py - 10 : py + 18;
+      valueLabels += '<text x="'+x(i)+'" y="'+labelY+'" font-size="10.5" font-weight="600" fill="var(--ink)" font-family="Space Grotesk,sans-serif" text-anchor="middle">'+p.value.toFixed(1)+'</text>';
+    });
+
+    var gridLines = "";
+    var steps = 4;
+    for(var g=0; g<=steps; g++){
+      var gv = minV + (g/steps)*(maxV-minV);
+      var gy = y(gv);
+      gridLines += '<line x1="'+padL+'" y1="'+gy+'" x2="'+(W-padR)+'" y2="'+gy+'" stroke="var(--border)" stroke-width="1"/>';
+      gridLines += '<text x="4" y="'+(gy+4)+'" font-size="10" fill="var(--ink-faint)" font-family="Inter,sans-serif">'+gv.toFixed(1)+'</text>';
+    }
+
+    var firstLabel = fmtDate(points[0].date);
+    var lastLabel = fmtDate(points[points.length-1].date);
+
+    chartWrap.innerHTML =
+      '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%; height:auto; display:block;">' +
+        gridLines + area + segments + dots + valueLabels +
+      '</svg>' +
+      '<div style="display:flex; justify-content:space-between; font-size:11px; color:var(--ink-faint); margin-top:2px;">' +
+        '<span>'+firstLabel+'</span><span>'+lastLabel+'</span>' +
+      '</div>';
+  }
+
+  // ---------- Resumo ----------
+  function renderResumo(){
+    var sorted = sortByDate(records);
+    var listEl = document.getElementById("resumoList");
+    var rangeEl = document.getElementById("resumoRange");
+
+    if(sorted.length < 2){
+      rangeEl.textContent = "Adicione ao menos 2 registros para ver o resumo";
+      listEl.innerHTML = '<div class="empty">Ainda não há dados suficientes.</div>';
+      return;
+    }
+
+    var first = sorted[0];
+    var last = sorted[sorted.length-1];
+    rangeEl.textContent = fmtDate(first.date) + " → " + fmtDate(last.date);
+
+    listEl.innerHTML = "";
+    METRICS.forEach(function(m){
+      var v1 = first[m.key], v2 = last[m.key];
+      if(v1 === "" || v1 === undefined || v2 === "" || v2 === undefined) return;
+      var n1 = parseFloat(v1), n2 = parseFloat(v2);
+      var diff = n2 - n1;
+      var status = statusFor(diff, m.lowerIsBetter);
+      var arrow = diff > STABLE_TOLERANCE ? "▲" : (diff < -STABLE_TOLERANCE ? "▼" : "＝");
+      var row = document.createElement("div");
+      row.className = "summary-row";
+      row.innerHTML =
+        '<div>' +
+          '<div class="name">' + m.label + '</div>' +
+          '<div class="from-to">' + fmtNum(v1,m.unit) + ' → ' + fmtNum(v2,m.unit) + '</div>' +
+        '</div>' +
+        '<div class="right"><span class="chip ' + status + '">' + arrow + ' ' + (diff>0?"+":"") + diff.toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1}) + ' ' + m.unit + '</span></div>';
+      listEl.appendChild(row);
+    });
+
+    if(!listEl.children.length){
+      listEl.innerHTML = '<div class="empty">Nenhuma medida em comum entre o primeiro e o último registro.</div>';
+    }
+  }
+
+  // ---------- Inicialização ----------
+  renderSnapshot();
+})();
+</script>
+</body>
+</html>
