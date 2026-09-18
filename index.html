@@ -2,9 +2,8 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Progresso — acompanhamento físico</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Progresso — Acompanhamento Físico v2.0</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -212,8 +211,8 @@
     border:1px solid var(--border);
     background:var(--surface);
     border-radius:8px;
-    width:30px;
-    height:30px;
+    width:32px;
+    height:32px;
     display:flex;
     align-items:center;
     justify-content:center;
@@ -335,9 +334,14 @@
     <!-- REGISTRAR -->
     <div class="view active" id="view-registrar">
       <section class="block">
-        <h2>Novo registro
+        <h2 id="formTitle">Novo registro
           <span class="sub">Preencha o peso e as medidas que quiser acompanhar hoje</span>
         </h2>
+        <input type="hidden" id="f-edit-id" value="">
+        <div class="field">
+          <label for="f-height">Sua Altura <span class="unit">(cm - para cálculo de IMC)</span></label>
+          <input type="number" step="1" inputmode="numeric" id="f-height" placeholder="ex: 175">
+        </div>
         <div class="field">
           <label for="f-date">Data</label>
           <input type="date" id="f-date">
@@ -377,6 +381,7 @@
           <textarea id="f-notes" placeholder="como você se sentiu, treinos da semana, etc."></textarea>
         </div>
         <button class="primary" id="saveBtn">Salvar registro</button>
+        <button class="ghost" id="cancelEditBtn" style="display:none;">Cancelar edição</button>
       </section>
     </div>
 
@@ -414,6 +419,14 @@
         </h2>
         <div id="resumoList"></div>
       </section>
+      <section class="block">
+        <h2>Dados & Backup
+          <span class="sub">Exporte seus dados para não perder seu progresso</span>
+        </h2>
+        <button class="ghost" id="exportBtn">Exportar Dados (JSON)</button>
+        <button class="ghost" id="importBtn">Importar Backup (JSON)</button>
+        <input type="file" id="importFile" accept=".json" style="display:none;">
+      </section>
     </div>
 
   </main>
@@ -432,6 +445,7 @@
   "use strict";
 
   var STORAGE_KEY = "progresso-fisico-registros-v1";
+  var HEIGHT_KEY = "progresso-fisico-altura-v1";
   var METRICS = [
     {key:"weight", label:"Peso", unit:"kg", lowerIsBetter:true},
     {key:"waist", label:"Cintura", unit:"cm", lowerIsBetter:true},
@@ -471,6 +485,10 @@
   }
 
   var records = loadRecords();
+
+  // Carregar altura salva
+  var savedHeight = localStorage.getItem(HEIGHT_KEY);
+  if(savedHeight) document.getElementById("f-height").value = savedHeight;
 
   // ---------- Navegação por abas ----------
   var tabs = document.querySelectorAll("nav.tabbar button");
@@ -525,12 +543,17 @@
     return improved ? "green" : "red";
   }
 
-  // ---------- Registrar ----------
+  // ---------- Registrar e Editar ----------
   document.getElementById("saveBtn").addEventListener("click", function(){
     var date = document.getElementById("f-date").value;
     if(!date){ alert("Escolha uma data para o registro."); return; }
+    
+    var heightVal = document.getElementById("f-height").value;
+    if(heightVal) localStorage.setItem(HEIGHT_KEY, heightVal);
+
+    var editId = document.getElementById("f-edit-id").value;
     var rec = {
-      id: Date.now().toString(36),
+      id: editId ? editId : Date.now().toString(36),
       date: date,
       weight: document.getElementById("f-weight").value,
       waist: document.getElementById("f-waist").value,
@@ -544,28 +567,44 @@
     var hasAny = ["weight","waist","hip","chest","arm","thigh","fat"].some(function(k){ return rec[k] !== ""; });
     if(!hasAny){ alert("Preencha ao menos o peso ou uma medida."); return; }
 
-    records.push(rec);
+    if(editId){
+      records = records.map(function(r){ return r.id === editId ? rec : r; });
+    } else {
+      records.push(rec);
+    }
+
     var ok = saveRecords(records);
-    if(!ok){ alert("Não foi possível salvar no momento. O registro não será mantido ao fechar a página."); }
+    if(!ok){ alert("Não foi possível salvar no momento."); }
 
-    ["f-weight","f-waist","f-hip","f-chest","f-arm","f-thigh","f-fat","f-notes"].forEach(function(id){
-      document.getElementById(id).value = "";
-    });
-    document.getElementById("f-date").valueAsDate = new Date();
-
+    resetForm();
     renderSnapshot();
+
     var savedMsg = document.createElement("div");
-    savedMsg.textContent = "Registro salvo ✓";
+    savedMsg.textContent = editId ? "Registro atualizado ✓" : "Registro salvo ✓";
     savedMsg.style.cssText = "text-align:center;font-size:13px;color:var(--green);margin-top:-4px;margin-bottom:10px;";
     document.getElementById("saveBtn").insertAdjacentElement("afterend", savedMsg);
     setTimeout(function(){ savedMsg.remove(); }, 2200);
   });
+
+  function resetForm(){
+    document.getElementById("f-edit-id").value = "";
+    ["f-weight","f-waist","f-hip","f-chest","f-arm","f-thigh","f-fat","f-notes"].forEach(function(id){
+      document.getElementById(id).value = "";
+    });
+    document.getElementById("f-date").valueAsDate = new Date();
+    document.getElementById("saveBtn").textContent = "Salvar registro";
+    document.getElementById("cancelEditBtn").style.display = "none";
+  }
+
+  document.getElementById("cancelEditBtn").addEventListener("click", resetForm);
 
   // ---------- Histórico ----------
   function renderHistorico(){
     var wrap = document.getElementById("historicoList");
     var countEl = document.getElementById("historicoCount");
     var sorted = sortByDate(records).reverse();
+    var height = parseFloat(localStorage.getItem(HEIGHT_KEY));
+
     countEl.textContent = sorted.length ? (sorted.length + (sorted.length===1?" registro":" registros")) : "Nenhum registro ainda";
 
     if(!sorted.length){
@@ -581,16 +620,32 @@
           details.push(m.label + ": " + fmtNum(rec[m.key], m.unit));
         }
       });
+
+      // Cálculo de IMC e RCQ
+      var calcInfo = [];
+      if(height && rec.weight){
+        var imc = parseFloat(rec.weight) / ((height/100) * (height/100));
+        calcInfo.push("IMC: " + imc.toFixed(1));
+      }
+      if(rec.waist && rec.hip){
+        var rcq = parseFloat(rec.waist) / parseFloat(rec.hip);
+        calcInfo.push("RCQ: " + rcq.toFixed(2));
+      }
+
       var row = document.createElement("div");
       row.className = "record";
       row.innerHTML =
         '<div>' +
           '<div class="date">' + fmtDate(rec.date) + '</div>' +
           '<div class="main">' + (rec.weight ? fmtNum(rec.weight,"kg") : "Sem peso registrado") + '</div>' +
+          (calcInfo.length ? '<div class="details" style="color:var(--accent);font-weight:500;">' + calcInfo.join(" · ") + '</div>' : '') +
           (details.length ? '<div class="details">' + details.join(" · ") + '</div>' : '') +
           (rec.notes ? '<div class="details">"' + rec.notes.replace(/</g,"&lt;") + '"</div>' : '') +
         '</div>' +
-        '<div class="actions"><button class="icon-btn" data-del="' + rec.id + '">✕</button></div>';
+        '<div class="actions">' +
+          '<button class="icon-btn" data-edit="' + rec.id + '">✎</button>' +
+          '<button class="icon-btn" data-del="' + rec.id + '">✕</button>' +
+        '</div>';
       wrap.appendChild(row);
     });
 
@@ -601,6 +656,21 @@
         saveRecords(records);
         renderHistorico();
         renderSnapshot();
+      });
+    });
+
+    wrap.querySelectorAll("[data-edit]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var target = records.find(function(r){ return r.id === btn.dataset.edit; });
+        if(!target) return;
+        document.getElementById("f-edit-id").value = target.id;
+        document.getElementById("f-date").value = target.date;
+        ["weight","waist","hip","chest","arm","thigh","fat","notes"].forEach(function(k){
+          document.getElementById("f-" + k).value = target[k] || "";
+        });
+        document.getElementById("saveBtn").textContent = "Atualizar registro";
+        document.getElementById("cancelEditBtn").style.display = "block";
+        tabs[0].click(); // Alterna para a aba Registrar
       });
     });
   }
@@ -648,7 +718,6 @@
     function x(i){ return padL + (i/(points.length-1)) * (W - padL - padR); }
     function y(v){ return H - padB - ((v - minV)/(maxV - minV)) * (H - padT - padB); }
 
-    // Área preenchida sob a linha (tom neutro, só para dar volume ao gráfico)
     var baseline = H - padB;
     var areaPath = 'M' + x(0) + ',' + baseline;
     points.forEach(function(p,i){ areaPath += ' L' + x(i) + ',' + y(p.value); });
@@ -667,7 +736,6 @@
     points.forEach(function(p,i){
       var py = y(p.value);
       dots += '<circle cx="'+x(i)+'" cy="'+py+'" r="3.5" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"/>';
-      // alterna o rótulo acima/abaixo do ponto quando há muitos registros, para reduzir sobreposição
       var above = points.length <= 6 ? true : (i % 2 === 0);
       var labelY = above ? py - 10 : py + 18;
       valueLabels += '<text x="'+x(i)+'" y="'+labelY+'" font-size="10.5" font-weight="600" fill="var(--ink)" font-family="Space Grotesk,sans-serif" text-anchor="middle">'+p.value.toFixed(1)+'</text>';
@@ -733,6 +801,44 @@
       listEl.innerHTML = '<div class="empty">Nenhuma medida em comum entre o primeiro e o último registro.</div>';
     }
   }
+
+  // ---------- Exportar e Importar ----------
+  document.getElementById("exportBtn").addEventListener("click", function(){
+    var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(records, null, 2));
+    var downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", "progresso_fisico_backup.json");
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  });
+
+  document.getElementById("importBtn").addEventListener("click", function(){
+    document.getElementById("importFile").click();
+  });
+
+  document.getElementById("importFile").addEventListener("change", function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(evt){
+      try{
+        var imported = JSON.parse(evt.target.result);
+        if(Array.isArray(imported)){
+          records = imported;
+          saveRecords(records);
+          renderSnapshot();
+          alert("Dados importados com sucesso!");
+          renderResumo();
+        } else {
+          alert("Arquivo inválido.");
+        }
+      }catch(err){
+        alert("Erro ao ler arquivo JSON.");
+      }
+    };
+    reader.readAsText(file);
+  });
 
   // ---------- Inicialização ----------
   renderSnapshot();
