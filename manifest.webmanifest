@@ -1,0 +1,15 @@
+{
+  "name": "Progresso — Diário corporal",
+  "short_name": "Progresso",
+  "description": "Acompanhe peso, medidas e metas de emagrecimento no celular.",
+  "lang": "pt-BR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f9f6",
+  "theme_color": "#236954",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "./icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
