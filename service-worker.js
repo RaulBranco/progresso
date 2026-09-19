@@ -1,4 +1,4 @@
-const CACHE = "progresso-pwa-v1";
+const CACHE = "progresso-pwa-v2";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./vendor/chart.umd.min.js", "./icons/icon.svg"];
 
 self.addEventListener("install", (event) => {
